@@ -6,23 +6,49 @@ function Home() {
   const [matches, setMatches] = useState([])
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState("ALL")
+  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchMatches = async () => {
+  // ✅ SAFE FETCH FUNCTION
+  const fetchMatches = async () => {
+    try {
       const data = await getMatches()
-      setMatches(data)
+
+      console.log("Fetched Data:", data) // debug
+
+      if (Array.isArray(data)) {
+        setMatches(data)
+      } else {
+        setMatches([])
+      }
+
+    } catch (error) {
+      console.error("Fetch Error:", error)
+      setMatches([])
+    } finally {
+      setLoading(false)
     }
+  }
+
+  // ✅ RUN ON LOAD + AUTO REFRESH
+  useEffect(() => {
     fetchMatches()
+
+    const interval = setInterval(() => {
+      fetchMatches()
+    }, 5000)
+
+    return () => clearInterval(interval)
   }, [])
 
-  // 🔍 Search + 🎯 Filter logic
-  const filteredMatches = matches.filter(match => {
-    const matchesSearch = match.name.toLowerCase().includes(search.toLowerCase())
+  // ✅ SAFE FILTER
+  const filteredMatches = (matches || []).filter(match => {
+    const matchesSearch =
+      match?.name?.toLowerCase().includes(search.toLowerCase())
 
-    const matchesFilter =
-      filter === "ALL" ||
-      (filter === "LIVE" && match.status === "live") ||
-      (filter === "FINISHED" && match.status === "completed")
+const matchesFilter =
+  filter === "ALL" ||
+  (filter === "LIVE" && match?.status?.toLowerCase().includes === ("live")) ||
+  (filter === "FINISHED" && match?.status?.toLowerCase().includes === ("complete"))
 
     return matchesSearch && matchesFilter
   })
@@ -45,7 +71,7 @@ function Home() {
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        {/* Filter Buttons */}
+        {/* Filter */}
         <div className="space-x-2 mb-4">
           {["ALL", "LIVE", "FINISHED"].map(type => (
             <button
@@ -65,7 +91,9 @@ function Home() {
 
       {/* Matches */}
       <div className="px-6 pb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredMatches.length === 0 ? (
+        {loading ? (
+          <p>Loading matches...</p>
+        ) : filteredMatches.length === 0 ? (
           <p>No matches found</p>
         ) : (
           filteredMatches.map(match => (

@@ -1,16 +1,44 @@
-import axios from "axios"
-
-const API_KEY = "f194699c-bb2b-42d8-b276-0bf51c74fd09" // 🔴 replace this
+// NO API KEY DEPENDENCY VERSION
 
 export const getMatches = async () => {
   try {
-    const res = await axios.get(
-      `https://api.cricapi.com/v1/currentMatches?apikey=${API_KEY}&offset=0`
-    )
-
-    return res.data.data
+    // 🔥 TEMP FAKE DATA (ALWAYS WORKS)
+    const data = [
+      {
+        id: "1",
+        name: "India vs Australia",
+        status: "Live"
+      },
+      {
+        id: "2",
+        name: "England vs Pakistan",
+        status: "Completed"
+      },
+      {
+        id: "3",
+        name: "South Africa vs New Zealand",
+        status: "Live"
+      }
+    ]
+    return data
   } catch (error) {
-    console.error(error)
+    console.error("ERROR:", error)
     return []
+  }
+}
+
+// ALSO KEEP THIS (for details page)
+export const getMatchDetails = async () => {
+  return {
+    name: "India vs Australia",
+    scorecard: [
+      {
+        inning: "India",
+        batting: [
+          { batsman: { name: "Rohit" }, r: 45, b: 30, "4s": 5, "6s": 2 },
+          { batsman: { name: "Kohli" }, r: 60, b: 42, "4s": 6, "6s": 1 }
+        ]
+      }
+    ]
   }
 }
