@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Play, Square, Award, MapPin, Calendar, Users, Radio, Cpu, 
-  RefreshCw, AlertCircle, Volume2, VolumeX, TrendingUp, Sparkles 
+  RefreshCw, AlertCircle, Volume2, VolumeX, TrendingUp, Sparkles,
+  ArrowLeft
 } from 'lucide-react';
 import { soundSynth } from '../utils/soundSynth';
 
-const MatchDetail = ({ matchId, socket }) => {
+const MatchDetail = ({ matchId, socket, onBack }) => {
   const [match, setMatch] = useState(null);
   const [activeTab, setActiveTab] = useState('commentary');
   const [simSpeed, setSimSpeed] = useState(3000);
@@ -87,11 +88,62 @@ const MatchDetail = ({ matchId, socket }) => {
     }
   }, [matchId, socket, soundEnabled]);
 
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
+  
   // Sync sound utility state
   const handleToggleSound = () => {
     const newState = !soundEnabled;
     setSoundEnabled(newState);
     soundSynth.toggle(newState);
+  };
+
+  // Deterministic Player Profile Generator based on name string hash
+  const generatePlayerProfile = (name) => {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    hash = Math.abs(hash);
+
+    const roles = ['Top-order Batsman', 'Middle-order Batsman', 'Allrounder', 'Fast Bowler', 'Spin Bowler', 'Wicketkeeper Batsman'];
+    const role = roles[hash % roles.length];
+    
+    const batStyles = ['Right-hand bat', 'Left-hand bat'];
+    const batStyle = batStyles[hash % batStyles.length];
+    
+    const bowlStyles = ['Right-arm fast-medium', 'Right-arm offbreak', 'Left-arm orthodox spin', 'Left-arm fast', 'No bowling style'];
+    let bowlStyle = bowlStyles[hash % bowlStyles.length];
+    if (role.includes('Batsman') && hash % 3 !== 0) bowlStyle = 'Right-arm offbreak (occasional)';
+
+    const matches = (hash % 150) + 15;
+    const runs = role.includes('Batsman') || role.includes('Allrounder') 
+      ? (hash % 6000) + 500 
+      : (hash % 800) + 50;
+    const batAvg = runs > 100 ? (runs / matches).toFixed(2) : '12.40';
+    const strikeRate = (85 + (hash % 60) + (role.includes('Batsman') ? 15 : 0)).toFixed(1);
+
+    const wickets = role.includes('Bowler') || role.includes('Allrounder')
+      ? (hash % 280) + 10
+      : (hash % 10);
+    const bowlEcon = (wickets > 0 ? (3.5 + (hash % 45) / 10) : 0).toFixed(2);
+    const bestBowling = wickets > 0 
+      ? `${(hash % 5) + 2}/${(hash % 30) + 5}`
+      : '1/12';
+
+    return {
+      name,
+      role,
+      batStyle,
+      bowlStyle,
+      stats: { matches, runs, batAvg, strikeRate, wickets, bowlEcon, bestBowling }
+    };
+  };
+
+  const handlePlayerClick = (name) => {
+    // Strip trailing stars, status text or symbols
+    const cleanedName = name.replace(/\*$/, '').replace(/\(c\)|\(wk\)|\(c\/wk\)|\(sub\)/gi, '').trim();
+    if (!cleanedName) return;
+    setSelectedPlayer(generatePlayerProfile(cleanedName));
   };
 
   if (!match) {
@@ -292,9 +344,26 @@ const MatchDetail = ({ matchId, socket }) => {
       {/* 1. Header Scorecard Display */}
       <div className={`detail-main-header ${isLive ? 'live-glow' : ''}`}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-            {match.title} • {match.series}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+            <button 
+              onClick={onBack || (() => window.history.back())}
+              className="btn flex-row back-btn"
+              style={{ 
+                padding: '0.35rem 0.65rem', 
+                fontSize: '0.75rem', 
+                borderColor: 'var(--border-subtle)', 
+                background: 'rgba(255,255,255,0.02)',
+                cursor: 'pointer',
+                borderRadius: '8px'
+              }}
+              title="Go back to matches list"
+            >
+              <ArrowLeft size={12} />
+            </button>
+            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
+              {match.title} • {match.series}
+            </span>
+          </div>
           <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
             {match.format && (
               <span className="badge badge-format" style={{ fontSize: '0.7rem' }}>{match.format}</span>
@@ -408,7 +477,9 @@ const MatchDetail = ({ matchId, socket }) => {
                         {match.batsmen.filter(b => !b.isOut).map((b) => (
                           <tr key={b.name} style={{ fontWeight: b.name === match.currentStriker ? '700' : '400', color: b.name === match.currentStriker ? '#FFF' : 'var(--color-text-muted)' }}>
                             <td className="flex-row" style={{ padding: '0.4rem 0' }}>
-                              {b.name}
+                              <span className="player-link" onClick={() => handlePlayerClick(b.name)}>
+                                {b.name}
+                              </span>
                               {b.name === match.currentStriker && <span className="striker-dot" />}
                             </td>
                             <td className="text-right">{b.runs}</td>
@@ -421,7 +492,7 @@ const MatchDetail = ({ matchId, socket }) => {
                       </tbody>
                     </table>
                   </div>
-
+ 
                   {/* Bowlers */}
                   <div className="bowlers-tracker">
                     <div className="tracker-title">Bowling</div>
@@ -439,7 +510,11 @@ const MatchDetail = ({ matchId, socket }) => {
                       <tbody>
                         {match.bowlers.filter(b => b.isActive || b.name === match.currentBowler).map((b) => (
                           <tr key={b.name} style={{ fontWeight: b.name === match.currentBowler ? '700' : '400', color: b.name === match.currentBowler ? '#FFF' : 'var(--color-text-muted)' }}>
-                            <td>{b.name}</td>
+                            <td>
+                              <span className="player-link" onClick={() => handlePlayerClick(b.name)}>
+                                {b.name}
+                              </span>
+                            </td>
                             <td className="text-right">{b.overs}</td>
                             <td className="text-right">{b.maidens}</td>
                             <td className="text-right">{b.runs}</td>
@@ -619,26 +694,82 @@ const MatchDetail = ({ matchId, socket }) => {
                             <td colSpan="7" style={{ color: 'var(--color-text-dark)', textAlign: 'center' }}>Innings yet to start</td>
                           </tr>
                         ) : (
-                          teamBatsmen.map((b) => (
-                            <tr key={b.name}>
-                              <td style={{ fontWeight: '500' }}>{b.name}</td>
-                              <td style={{ color: b.isOut ? 'var(--color-danger)' : 'var(--color-secondary)' }}>
-                                {b.isOut ? (b.howOut || 'Out') : 'Batting'}
+                          <>
+                            {teamBatsmen.map((b) => (
+                              <tr key={b.name}>
+                                <td style={{ fontWeight: '500' }}>
+                                  <span className="player-link" onClick={() => handlePlayerClick(b.name)}>
+                                    {b.name}
+                                  </span>
+                                </td>
+                                <td style={{ color: b.isOut ? 'var(--color-danger)' : 'var(--color-secondary)' }}>
+                                  {b.isOut ? (b.howOut || 'Out') : 'Batting'}
+                                </td>
+                                <td className="text-right" style={{ fontWeight: '600' }}>{b.runs}</td>
+                                <td className="text-right">{b.balls}</td>
+                                <td className="text-right">{b.fours}</td>
+                                <td className="text-right">{b.sixes}</td>
+                                <td className="text-right">{b.balls > 0 ? ((b.runs / b.balls) * 100).toFixed(1) : '0.0'}</td>
+                              </tr>
+                            ))}
+                            {/* Extras Row */}
+                            <tr className="scorecard-extras-row">
+                              <td style={{ fontWeight: '500' }}>Extras</td>
+                              <td colSpan="6" style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
+                                <strong style={{ color: 'var(--color-text-main)', fontSize: '0.85rem' }}>{score.extras || 0}</strong>
                               </td>
-                              <td className="text-right" style={{ fontWeight: '600' }}>{b.runs}</td>
-                              <td className="text-right">{b.balls}</td>
-                              <td className="text-right">{b.fours}</td>
-                              <td className="text-right">{b.sixes}</td>
-                              <td className="text-right">{b.balls > 0 ? ((b.runs / b.balls) * 100).toFixed(1) : '0.0'}</td>
                             </tr>
-                          ))
+                            {/* Total Row */}
+                            <tr className="scorecard-total-row">
+                              <td style={{ fontWeight: 'bold' }}>Total</td>
+                              <td colSpan="6" style={{ fontWeight: 'bold', color: 'var(--color-secondary)' }}>
+                                {score.runs}/{score.wickets} <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', fontWeight: '400' }}>({score.overs}.{score.balls || 0} Ov)</span>
+                              </td>
+                            </tr>
+                          </>
                         )}
                       </tbody>
                     </table>
 
-                    <div style={{ padding: '0.5rem 1.2rem', fontSize: '0.8rem', color: 'var(--color-text-muted)', borderTop: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.01)' }}>
-                      <strong>Did Not Bat:</strong> {team.squad.filter(name => !match.batsmen.some(b => b.name === name)).join(', ') || 'None'}
+                    <div style={{ padding: '0.5rem 1.2rem', fontSize: '0.8rem', color: 'var(--color-text-muted)', borderTop: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.01)', display: 'flex', flexWrap: 'wrap', gap: '0.3rem', alignItems: 'center' }}>
+                      <strong>Did Not Bat:</strong>{' '}
+                      {team.squad && team.squad.filter(name => !match.batsmen.some(b => b.name === name)).length > 0 ? (
+                        team.squad.filter(name => !match.batsmen.some(b => b.name === name)).map((name, i, arr) => (
+                          <span key={name}>
+                            <span className="player-link" style={{ fontSize: '0.8rem' }} onClick={() => handlePlayerClick(name)}>
+                              {name}
+                            </span>
+                            {i < arr.length - 1 ? ', ' : ''}
+                          </span>
+                        ))
+                      ) : (
+                        <span>None</span>
+                      )}
                     </div>
+
+                    {/* Fall of Wickets Section */}
+                    {match.fow && match.fow[teamKey] && match.fow[teamKey].length > 0 && (
+                      <div className="fow-container">
+                        <strong>Fall of Wickets</strong>
+                        <div className="fow-list">
+                          {match.fow[teamKey].map((wicket, i) => {
+                            // Extract player name from wicket string like "12-1 (Rohit Sharma, 1.3 ov)"
+                            const nameMatch = wicket.match(/\(([^,]+),/);
+                            const playerName = nameMatch ? nameMatch[1].trim() : '';
+                            return (
+                              <span 
+                                key={i} 
+                                className="fow-pill" 
+                                style={{ cursor: playerName ? 'pointer' : 'default' }}
+                                onClick={() => playerName && handlePlayerClick(playerName)}
+                              >
+                                {wicket}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
 
                     <div style={{ background: 'rgba(0,0,0,0.15)', borderTop: '1px solid var(--border-subtle)', padding: '0.4rem 1.2rem', fontSize: '0.8rem', fontWeight: '600', color: 'var(--color-primary)' }}>
                       Bowling
@@ -662,7 +793,11 @@ const MatchDetail = ({ matchId, socket }) => {
                         ) : (
                           teamBowlers.map((b) => (
                             <tr key={b.name}>
-                              <td style={{ fontWeight: '500' }}>{b.name}</td>
+                              <td style={{ fontWeight: '500' }}>
+                                <span className="player-link" onClick={() => handlePlayerClick(b.name)}>
+                                  {b.name}
+                                </span>
+                              </td>
                               <td className="text-right">{b.overs}</td>
                               <td className="text-right">{b.maidens}</td>
                               <td className="text-right">{b.runs}</td>
@@ -689,7 +824,12 @@ const MatchDetail = ({ matchId, socket }) => {
                   <ul style={{ listStyle: 'none' }}>
                     {match.teams.teamA.squad.map((player, idx) => (
                       <li key={player} style={{ padding: '0.4rem 0', borderBottom: '1px solid rgba(255,255,255,0.02)', fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between' }}>
-                        <span>{idx + 1}. {player}</span>
+                        <span>
+                          {idx + 1}.{' '}
+                          <span className="player-link" onClick={() => handlePlayerClick(player)}>
+                            {player}
+                          </span>
+                        </span>
                         {match.batsmen.some(b => b.name === player && b.isOut) && <span style={{ color: 'var(--color-danger)', fontSize: '0.75rem' }}>Out</span>}
                         {match.batsmen.some(b => b.name === player && !b.isOut) && <span style={{ color: 'var(--color-secondary)', fontSize: '0.75rem' }}>Batting</span>}
                       </li>
@@ -701,7 +841,12 @@ const MatchDetail = ({ matchId, socket }) => {
                   <ul style={{ listStyle: 'none' }}>
                     {match.teams.teamB.squad.map((player, idx) => (
                       <li key={player} style={{ padding: '0.4rem 0', borderBottom: '1px solid rgba(255,255,255,0.02)', fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between' }}>
-                        <span>{idx + 1}. {player}</span>
+                        <span>
+                          {idx + 1}.{' '}
+                          <span className="player-link" onClick={() => handlePlayerClick(player)}>
+                            {player}
+                          </span>
+                        </span>
                         {match.batsmen.some(b => b.name === player && b.isOut) && <span style={{ color: 'var(--color-danger)', fontSize: '0.75rem' }}>Out</span>}
                         {match.batsmen.some(b => b.name === player && !b.isOut) && <span style={{ color: 'var(--color-secondary)', fontSize: '0.75rem' }}>Batting</span>}
                       </li>
@@ -854,6 +999,84 @@ const MatchDetail = ({ matchId, socket }) => {
           </div>
         </div>
       </div>
+
+      {/* Player Profile Modal */}
+      {selectedPlayer && (
+        <div className="modal-overlay" onClick={() => setSelectedPlayer(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '450px' }}>
+            <button 
+              onClick={() => setSelectedPlayer(null)} 
+              style={{
+                position: 'absolute',
+                top: '15px',
+                right: '15px',
+                background: 'none',
+                border: 'none',
+                color: 'var(--color-text-muted)',
+                fontSize: '1.5rem',
+                cursor: 'pointer',
+                lineHeight: '1'
+              }}
+            >
+              &times;
+            </button>
+            
+            <div className="player-profile-header">
+              <div className="player-avatar-large">
+                {selectedPlayer.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+              </div>
+              <div className="player-meta-info">
+                <h2>{selectedPlayer.name}</h2>
+                <p>{selectedPlayer.role}</p>
+              </div>
+            </div>
+
+            <div className="player-bio-grid">
+              <div className="bio-item">
+                <div className="bio-label">Batting Style</div>
+                <div className="bio-value">{selectedPlayer.batStyle}</div>
+              </div>
+              <div className="bio-item">
+                <div className="bio-label">Bowling Style</div>
+                <div className="bio-value">{selectedPlayer.bowlStyle}</div>
+              </div>
+            </div>
+
+            <div className="player-stats-section">
+              <h3>Career Statistics</h3>
+              <table className="stats-table">
+                <thead>
+                  <tr>
+                    <th>Format</th>
+                    <th className="text-right">Mat</th>
+                    <th className="text-right">Runs</th>
+                    <th className="text-right">Avg</th>
+                    <th className="text-right">SR</th>
+                    <th className="text-right">Wkts</th>
+                    <th className="text-right">Econ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>T20I / League</td>
+                    <td className="text-right">{selectedPlayer.stats.matches}</td>
+                    <td className="text-right">{selectedPlayer.stats.runs}</td>
+                    <td className="text-right">{selectedPlayer.stats.batAvg}</td>
+                    <td className="text-right">{selectedPlayer.stats.strikeRate}</td>
+                    <td className="text-right">{selectedPlayer.stats.wickets}</td>
+                    <td className="text-right">{selectedPlayer.stats.bowlEcon > 0 ? selectedPlayer.stats.bowlEcon : '-'}</td>
+                  </tr>
+                </tbody>
+              </table>
+              {selectedPlayer.stats.wickets > 0 && (
+                <div style={{ marginTop: '0.8rem', fontSize: '0.8rem', color: 'var(--color-text-muted)', textAlign: 'right' }}>
+                  <strong>Best Bowling:</strong> {selectedPlayer.stats.bestBowling}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

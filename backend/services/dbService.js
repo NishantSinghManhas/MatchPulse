@@ -87,19 +87,8 @@ export const dbService = {
 
   async updateMatch(id, updateData) {
     if (getDbStatus()) {
-      // If we are passing plain objects, sometimes mongoose needs it cleaned up or we can update directly
       try {
-        // Find document and apply changes
-        const doc = await Match.findById(id);
-        if (!doc) return null;
-        
-        // Loop keys and apply to schema document to trigger validation/hooks if any
-        Object.keys(updateData).forEach(key => {
-          if (updateData[key] !== undefined) {
-            doc[key] = updateData[key];
-          }
-        });
-        return await doc.save();
+        return await Match.findByIdAndUpdate(id, updateData, { new: true });
       } catch (err) {
         console.error('Error updating mongoose doc', err);
         return null;

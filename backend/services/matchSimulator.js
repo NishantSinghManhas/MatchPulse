@@ -200,6 +200,7 @@ export const simulateBall = async (match, io, manualEvent = null) => {
   
   if (isExtra) {
     scoreRef.runs += runsScored;
+    scoreRef.extras = (scoreRef.extras || 0) + runsScored;
     // extras runs are added to bowler as well
     bowler.runs += runsScored;
     
@@ -238,6 +239,15 @@ export const simulateBall = async (match, io, manualEvent = null) => {
     ];
     striker.howOut = howOutOptions[Math.floor(Math.random() * howOutOptions.length)];
     
+    // Add to Fall of Wickets
+    const fowString = `${scoreRef.runs}-${scoreRef.wickets} (${striker.name}, ${scoreRef.overs}.${scoreRef.balls} ov)`;
+    if (!match.fow) {
+      match.fow = { teamA: [], teamB: [] };
+    }
+    const fowKey = batTeamKey === 'teamA' ? 'teamA' : 'teamB';
+    if (!match.fow[fowKey]) match.fow[fowKey] = [];
+    match.fow[fowKey].push(fowString);
+
     match.lastOver.push('W');
     
     const text = getCommentaryText(striker.name, bowler.name, 0, 'wicket', `${bowler.name} strikes! ${striker.name} ${striker.howOut}. Big wicket!`);

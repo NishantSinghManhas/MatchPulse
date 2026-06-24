@@ -415,6 +415,7 @@ function App() {
               <MatchDetail 
                 matchId={selectedMatchId} 
                 socket={socket} 
+                onBack={() => { setActiveView('matches'); setSelectedMatchId(null); }}
               />
             )}
 

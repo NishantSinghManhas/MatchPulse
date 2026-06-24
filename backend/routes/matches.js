@@ -27,6 +27,23 @@ export const syncLiveMatches = async (io) => {
     const activeMatches = await dbService.getMatches();
     
     for (const liveMatch of liveMatches) {
+      // If the list scraper says it is live, fetch its details to get the actual live scores!
+      if (liveMatch.status === 'live') {
+        try {
+          const details = await cricketApiService.getMatchDetails(liveMatch.externalId);
+          if (details) {
+            liveMatch.scores = details.scores;
+            liveMatch.teams = details.teams;
+            liveMatch.status = details.status;
+            liveMatch.result = details.result;
+            liveMatch.toss = details.toss;
+            liveMatch.fow = details.fow;
+          }
+        } catch (err) {
+          console.error(`Error fetching detail in list sync for match ${liveMatch.externalId}:`, err.message);
+        }
+      }
+
       const existing = activeMatches.find(m => 
         m.externalId === liveMatch.externalId && 
         m.externalSource === liveMatch.externalSource
@@ -39,14 +56,16 @@ export const syncLiveMatches = async (io) => {
           format: liveMatch.format,
           scores: liveMatch.scores,
           status: liveMatch.status,
-          result: liveMatch.result
+          result: liveMatch.result,
+          toss: liveMatch.toss || existing.toss,
+          fow: liveMatch.fow || existing.fow
         };
         
         // Merge team info
         if (liveMatch.teams) {
           updateData.teams = {
-            teamA: { ...existing.teams.teamA, name: liveMatch.teams.teamA.name, shortName: liveMatch.teams.teamA.shortName },
-            teamB: { ...existing.teams.teamB, name: liveMatch.teams.teamB.name, shortName: liveMatch.teams.teamB.shortName }
+            teamA: { ...existing.teams.teamA, name: liveMatch.teams.teamA.name, shortName: liveMatch.teams.teamA.shortName, squad: liveMatch.teams.teamA.squad || existing.teams.teamA.squad },
+            teamB: { ...existing.teams.teamB, name: liveMatch.teams.teamB.name, shortName: liveMatch.teams.teamB.shortName, squad: liveMatch.teams.teamB.squad || existing.teams.teamB.squad }
           };
         }
         
@@ -229,7 +248,8 @@ router.get('/:id', async (req, res) => {
     }
 
     // On-demand scraper detailed sync for live/upcoming external matches
-    if (match.externalId && match.status !== 'completed') {
+    // Also sync if completed but no detailed scorecard has been loaded yet (no batsmen details)
+    if (match.externalId && (match.status !== 'completed' || !match.batsmen || match.batsmen.length === 0)) {
       try {
         const details = await cricketApiService.getMatchDetails(match.externalId);
         if (details) {
@@ -239,27 +259,29 @@ router.get('/:id', async (req, res) => {
             lastOver: details.lastOver,
             currentStriker: details.currentStriker,
             currentNonStriker: details.currentNonStriker,
-            currentBowler: details.currentBowler
+            currentBowler: details.currentBowler,
+            status: details.status,
+            result: details.result,
+            fow: details.fow
           };
 
-          if (details.activeScore) {
-            const batKey = details.battingFirst;
-            const bowlKey = batKey === 'teamA' ? 'teamB' : 'teamA';
-            
+          if (details.scores) {
             updateData.scores = {
-              [batKey]: {
-                runs: details.activeScore.runs,
-                wickets: details.activeScore.wickets,
-                overs: details.activeScore.overs,
-                balls: details.activeScore.balls,
-                declared: false
+              teamA: {
+                runs: details.scores.teamA?.runs || 0,
+                wickets: details.scores.teamA?.wickets || 0,
+                overs: details.scores.teamA?.overs || 0,
+                balls: details.scores.teamA?.balls || 0,
+                extras: details.extras?.teamA || 0,
+                declared: details.scores.teamA?.declared || false
               },
-              [bowlKey]: {
-                runs: match.scores?.[bowlKey]?.runs || 0,
-                wickets: match.scores?.[bowlKey]?.wickets || 0,
-                overs: match.scores?.[bowlKey]?.overs || 0,
-                balls: match.scores?.[bowlKey]?.balls || 0,
-                declared: match.scores?.[bowlKey]?.declared || false
+              teamB: {
+                runs: details.scores.teamB?.runs || 0,
+                wickets: details.scores.teamB?.wickets || 0,
+                overs: details.scores.teamB?.overs || 0,
+                balls: details.scores.teamB?.balls || 0,
+                extras: details.extras?.teamB || 0,
+                declared: details.scores.teamB?.declared || false
               }
             };
           }

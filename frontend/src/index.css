@@ -1541,3 +1541,167 @@ button, input, select, textarea {
 .quick-access-btn.premium:hover {
   background: rgba(255, 215, 0, 0.08);
 }
+
+/* Player clickability and details style */
+.player-link {
+  cursor: pointer;
+  color: var(--color-primary);
+  transition: all 0.2s ease;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.player-link:hover {
+  text-decoration: underline;
+  color: var(--color-secondary);
+}
+
+/* Scorecard Table Row enhancements */
+.scorecard-extras-row {
+  background: rgba(255, 255, 255, 0.015);
+  font-size: 0.85rem;
+}
+.light-theme .scorecard-extras-row {
+  background: rgba(0, 0, 0, 0.015);
+}
+.scorecard-total-row {
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.88rem;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 2px solid var(--border-subtle);
+}
+.light-theme .scorecard-total-row {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+/* Fall of Wickets style */
+.fow-container {
+  margin: 1.2rem 0;
+  padding: 1rem 1.2rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+}
+.light-theme .fow-container {
+  background: rgba(0, 0, 0, 0.01);
+}
+.fow-container strong {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--color-text-main);
+  margin-bottom: 0.6rem;
+}
+.fow-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.fow-pill {
+  font-size: 0.78rem;
+  padding: 0.3rem 0.7rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  color: var(--color-text-muted);
+  transition: all 0.2s ease;
+}
+.fow-pill:hover {
+  border-color: var(--color-primary);
+  color: var(--color-text-main);
+  background: var(--bg-card-hover);
+}
+
+/* Player Profile Modal specific layout */
+.player-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 1.5rem;
+}
+.player-avatar-large {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #121622;
+  box-shadow: 0 0 15px var(--team-accent-glow);
+}
+.player-meta-info h2 {
+  font-size: 1.4rem;
+  margin: 0 0 0.3rem 0;
+  color: var(--color-text-main);
+  font-family: var(--font-display);
+}
+.player-meta-info p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+.player-bio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.bio-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+}
+.light-theme .bio-item {
+  background: rgba(0, 0, 0, 0.02);
+}
+.bio-label {
+  font-size: 0.72rem;
+  color: var(--color-text-dark);
+  text-transform: uppercase;
+  margin-bottom: 0.2rem;
+}
+.bio-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+.player-stats-section h3 {
+  font-size: 0.95rem;
+  color: var(--color-accent);
+  margin-bottom: 0.8rem;
+  font-family: var(--font-display);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.stats-table th {
+  font-size: 0.7rem;
+  color: var(--color-text-dark);
+  text-transform: uppercase;
+  padding: 0.4rem 0.6rem;
+  text-align: right;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.stats-table th:first-child, .stats-table td:first-child {
+  text-align: left;
+}
+.stats-table td {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.6rem;
+  text-align: right;
+  color: var(--color-text-main);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+}
+.light-theme .stats-table td {
+  border-bottom-color: rgba(0, 0, 0, 0.02);
+}
+

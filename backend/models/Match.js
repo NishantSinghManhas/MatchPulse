@@ -67,6 +67,7 @@ const MatchSchema = new mongoose.Schema({
       wickets: { type: Number, default: 0 },
       overs: { type: Number, default: 0 },
       balls: { type: Number, default: 0 }, // exact ball count in this over (0 to 5)
+      extras: { type: Number, default: 0 },
       declared: { type: Boolean, default: false }
     },
     teamB: {
@@ -74,8 +75,13 @@ const MatchSchema = new mongoose.Schema({
       wickets: { type: Number, default: 0 },
       overs: { type: Number, default: 0 },
       balls: { type: Number, default: 0 },
+      extras: { type: Number, default: 0 },
       declared: { type: Boolean, default: false }
     }
+  },
+  fow: {
+    teamA: [{ type: String }],
+    teamB: [{ type: String }]
   },
   target: { type: Number, default: 0 },
   result: { type: String, default: 'Match yet to start' },
