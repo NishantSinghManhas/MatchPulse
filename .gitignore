@@ -1,0 +1,32 @@
+# Node modules
+node_modules/
+**/node_modules/
+
+# Local Environment variables
+.env
+.env.local
+**/ .env
+**/ .env.local
+
+# Vite / React build outputs
+dist/
+dist-ssr/
+*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Editor / OS configs
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Project-specific local databases or scratch directories
+matches_db.json
+backend/matches_db.json
+backend/scratch/
+C:/Users/hp/.gemini/
