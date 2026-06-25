@@ -27,6 +27,13 @@ const Rankings = () => {
         { rank: 3, name: 'Pat Cummins', team: 'AUS', rating: 821 },
         { rank: 4, name: 'Kagiso Rabada', team: 'RSA', rating: 812 },
         { rank: 5, name: 'Josh Hazlewood', team: 'AUS', rating: 806 }
+      ],
+      allrounders: [
+        { rank: 1, name: 'Ravindra Jadeja', team: 'IND', rating: 455 },
+        { rank: 2, name: 'Ravichandran Ashwin', team: 'IND', rating: 370 },
+        { rank: 3, name: 'Shakib Al Hasan', team: 'BAN', rating: 332 },
+        { rank: 4, name: 'Jason Holder', team: 'WI', rating: 280 },
+        { rank: 5, name: 'Ben Stokes', team: 'ENG', rating: 272 }
       ]
     },
     odi: {
@@ -50,6 +57,13 @@ const Rankings = () => {
         { rank: 3, name: 'Adam Zampa', team: 'AUS', rating: 686 },
         { rank: 4, name: 'Kuldeep Yadav', team: 'IND', rating: 682 },
         { rank: 5, name: 'Mohammed Siraj', team: 'IND', rating: 670 }
+      ],
+      allrounders: [
+        { rank: 1, name: 'Mohammad Nabi', team: 'AFG', rating: 320 },
+        { rank: 2, name: 'Shakib Al Hasan', team: 'BAN', rating: 292 },
+        { rank: 3, name: 'Sikandar Raza', team: 'ZIM', rating: 287 },
+        { rank: 4, name: 'Assad Vala', team: 'PNG', rating: 248 },
+        { rank: 5, name: 'Mitchell Santner', team: 'NZ', rating: 240 }
       ]
     },
     t20: {
@@ -73,6 +87,13 @@ const Rankings = () => {
         { rank: 3, name: 'Ravi Bishnoi', team: 'IND', rating: 681 },
         { rank: 4, name: 'Wanindu Hasaranga', team: 'SL', rating: 679 },
         { rank: 5, name: 'Rashid Khan', team: 'AFG', rating: 672 }
+      ],
+      allrounders: [
+        { rank: 1, name: 'Hardik Pandya', team: 'IND', rating: 245 },
+        { rank: 2, name: 'Wanindu Hasaranga', team: 'SL', rating: 228 },
+        { rank: 3, name: 'Marcus Stoinis', team: 'AUS', rating: 211 },
+        { rank: 4, name: 'Sikandar Raza', team: 'ZIM', rating: 208 },
+        { rank: 5, name: 'Shakib Al Hasan', team: 'BAN', rating: 206 }
       ]
     }
   };
@@ -126,6 +147,12 @@ const Rankings = () => {
             onClick={() => setCategory('bowlers')}
           >
             Top Bowlers
+          </button>
+          <button 
+            className={`tab-btn ${category === 'allrounders' ? 'active' : ''}`} 
+            onClick={() => setCategory('allrounders')}
+          >
+            All-Rounders
           </button>
         </div>
 

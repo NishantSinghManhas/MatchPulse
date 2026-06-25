@@ -45,6 +45,7 @@ const MatchSchema = new mongoose.Schema({
   format: { type: String, default: 'T20' }, // e.g., "T20", "T20I", "ODI", "TEST"
   venue: { type: String, required: true }, // e.g., "Melbourne Cricket Ground"
   date: { type: String, default: () => new Date().toLocaleDateString() },
+  time: { type: String, default: '3:30 PM IST' },
   status: { type: String, enum: ['upcoming', 'live', 'completed'], default: 'upcoming' },
   oversLimit: { type: Number, default: 20 },
   externalSource: { type: String, default: '' },
@@ -85,6 +86,12 @@ const MatchSchema = new mongoose.Schema({
   },
   target: { type: Number, default: 0 },
   result: { type: String, default: 'Match yet to start' },
+  partnership: {
+    runs: { type: Number, default: 0 },
+    balls: { type: Number, default: 0 },
+    batsmanA: { type: String, default: '' },
+    batsmanB: { type: String, default: '' }
+  },
   
   // Live batting cards for the current innings
   batsmen: [PlayerPerformanceSchema],

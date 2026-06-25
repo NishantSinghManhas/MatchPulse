@@ -1705,3 +1705,10 @@ button, input, select, textarea {
   border-bottom-color: rgba(0, 0, 0, 0.02);
 }
 
+.search-result-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.light-theme .search-result-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+

@@ -117,6 +117,7 @@ router.post('/seed', async (req, res) => {
         format: "T20I",
         venue: "Narendra Modi Stadium, Ahmedabad",
         date: new Date().toLocaleDateString(),
+        time: "7:30 PM IST",
         status: "live",
         oversLimit: 20,
         teams: {
@@ -141,6 +142,12 @@ router.post('/seed', async (req, res) => {
         scores: {
           teamA: { runs: 86, wickets: 2, overs: 9, balls: 2, declared: false },
           teamB: { runs: 0, wickets: 0, overs: 0, balls: 0, declared: false }
+        },
+        partnership: {
+          runs: 58,
+          balls: 32,
+          batsmanA: "Rohit Sharma",
+          batsmanB: "Suryakumar Yadav"
         },
         batsmen: [
           { name: "Rohit Sharma", runs: 42, balls: 26, fours: 4, sixes: 2, isOut: false, isStriker: false, isNonStriker: true },
@@ -170,7 +177,8 @@ router.post('/seed', async (req, res) => {
         series: "The Ashes, 2026",
         format: "TEST",
         venue: "Lord's, London",
-        date: new Date().toLocaleDateString(),
+        date: "26 June 2026",
+        time: "3:30 PM IST",
         status: "upcoming",
         oversLimit: 90,
         teams: {
@@ -198,6 +206,7 @@ router.post('/seed', async (req, res) => {
         format: "T20I",
         venue: "New Wanderers Stadium, Johannesburg",
         date: "2026-06-20",
+        time: "8:00 PM IST",
         status: "completed",
         oversLimit: 20,
         teams: {

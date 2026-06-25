@@ -141,6 +141,13 @@ export const simulateBall = async (match, io, manualEvent = null) => {
     match.bowlers.push(bowler);
   }
 
+  // Initialize and update partnership state
+  if (!match.partnership) {
+    match.partnership = { runs: 0, balls: 0, batsmanA: '', batsmanB: '' };
+  }
+  match.partnership.batsmanA = striker.name;
+  match.partnership.batsmanB = nonStriker ? nonStriker.name : '';
+
   // Determine outcome
   let eventType = 'run';
   let runsScored = 0;
@@ -204,6 +211,11 @@ export const simulateBall = async (match, io, manualEvent = null) => {
     // extras runs are added to bowler as well
     bowler.runs += runsScored;
     
+    // Add to partnership
+    if (match.partnership) {
+      match.partnership.runs += runsScored;
+    }
+    
     // Add to last over tracker
     const extraLabel = runsScored > 1 ? `${runsScored}${extraType}` : extraType;
     match.lastOver.push(extraLabel);
@@ -225,6 +237,13 @@ export const simulateBall = async (match, io, manualEvent = null) => {
     
     // Update bowler balls bowled (since legal ball)
     scoreRef.balls += 1;
+    
+    // Add to partnership
+    if (match.partnership) {
+      match.partnership.balls += 1; // legal ball
+      match.partnership.runs = 0;
+      match.partnership.balls = 0;
+    }
     
     // Batsman is out
     striker.balls += 1;
@@ -287,6 +306,12 @@ export const simulateBall = async (match, io, manualEvent = null) => {
     // Normal run or boundary
     scoreRef.runs += runsScored;
     scoreRef.balls += 1;
+    
+    // Add to partnership
+    if (match.partnership) {
+      match.partnership.runs += runsScored;
+      match.partnership.balls += 1;
+    }
     
     // Update batsman performance
     striker.runs += runsScored;

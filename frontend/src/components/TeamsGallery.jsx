@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Users, Shield, Trophy, UserCheck } from 'lucide-react';
 
-const TeamsGallery = () => {
-  const [selectedTeam, setSelectedTeam] = useState('IND');
+const TeamsGallery = ({ selectedTeamCode, setSelectedTeamCode }) => {
+  const [localTeam, setLocalTeam] = useState('IND');
+  const selectedTeam = selectedTeamCode || localTeam;
+  const setSelectedTeam = setSelectedTeamCode || setLocalTeam;
 
   const teamsData = [
     {
@@ -12,6 +14,8 @@ const TeamsGallery = () => {
       achievements: ['ICC ODI World Cup: 1983, 2011', 'ICC T20 World Cup: 2007, 2024', 'ICC Champions Trophy: 2002, 2013'],
       captain: 'Rohit Sharma',
       coach: 'Rahul Dravid',
+      winPercentage: '67.4%',
+      recentMatches: ['vs AUS (W)', 'vs ENG (W)', 'vs RSA (L)', 'vs NZ (W)', 'vs PAK (W)'],
       squad: ["Rohit Sharma", "Virat Kohli", "Suryakumar Yadav", "Rishabh Pant", "Hardik Pandya", "Ravindra Jadeja", "Axar Patel", "Kuldeep Yadav", "Jasprit Bumrah", "Arshdeep Singh", "Mohammed Siraj"]
     },
     {
@@ -21,6 +25,8 @@ const TeamsGallery = () => {
       achievements: ['ICC ODI World Cup: 1987, 1999, 2003, 2007, 2015, 2023', 'ICC T20 World Cup: 2021', 'ICC World Test Championship: 2021-2023'],
       captain: 'Mitchell Marsh',
       coach: 'Andrew McDonald',
+      winPercentage: '63.2%',
+      recentMatches: ['vs IND (L)', 'vs ENG (W)', 'vs RSA (W)', 'vs NZ (W)', 'vs PAK (W)'],
       squad: ["Travis Head", "David Warner", "Mitchell Marsh", "Glenn Maxwell", "Marcus Stoinis", "Tim David", "Matthew Wade", "Pat Cummins", "Mitchell Starc", "Josh Hazlewood", "Adam Zampa"]
     },
     {
@@ -30,6 +36,8 @@ const TeamsGallery = () => {
       achievements: ['ICC ODI World Cup: 2019', 'ICC T20 World Cup: 2010, 2022'],
       captain: 'Jos Buttler',
       coach: 'Brendon McCullum',
+      winPercentage: '56.8%',
+      recentMatches: ['vs AUS (L)', 'vs IND (L)', 'vs RSA (W)', 'vs NZ (L)', 'vs PAK (W)'],
       squad: ["Jos Buttler", "Phil Salt", "Will Jacks", "Jonny Bairstow", "Harry Brook", "Liam Livingstone", "Moeen Ali", "Sam Curran", "Jofra Archer", "Adil Rashid", "Mark Wood"]
     },
     {
@@ -39,6 +47,8 @@ const TeamsGallery = () => {
       achievements: ['ICC Champions Trophy: 1998'],
       captain: 'Aiden Markram',
       coach: 'Rob Walter',
+      winPercentage: '54.5%',
+      recentMatches: ['vs IND (W)', 'vs AUS (L)', 'vs ENG (L)', 'vs NZ (W)', 'vs PAK (L)'],
       squad: ["Reeza Hendricks", "Quinton de Kock", "Aiden Markram", "Heinrich Klaasen", "David Miller", "Tristan Stubbs", "Marco Jansen", "Keshav Maharaj", "Kagiso Rabada", "Anrich Nortje", "Gerald Coetzee"]
     },
     {
@@ -48,6 +58,8 @@ const TeamsGallery = () => {
       achievements: ['ICC World Test Championship: 2019-2021', 'ICC KnockOut Trophy: 2000'],
       captain: 'Kane Williamson',
       coach: 'Gary Stead',
+      winPercentage: '53.1%',
+      recentMatches: ['vs IND (L)', 'vs AUS (L)', 'vs ENG (W)', 'vs RSA (L)', 'vs PAK (W)'],
       squad: ["Devon Conway", "Rachin Ravindra", "Kane Williamson", "Daryl Mitchell", "Glenn Phillips", "Mark Chapman", "Mitchell Santner", "Matt Henry", "Tim Southee", "Lockie Ferguson", "Ish Sodhi"]
     },
     {
@@ -57,6 +69,8 @@ const TeamsGallery = () => {
       achievements: ['ICC ODI World Cup: 1992', 'ICC T20 World Cup: 2009', 'ICC Champions Trophy: 2017'],
       captain: 'Babar Azam',
       coach: 'Gary Kirsten',
+      winPercentage: '48.9%',
+      recentMatches: ['vs IND (L)', 'vs AUS (L)', 'vs ENG (L)', 'vs RSA (W)', 'vs NZ (L)'],
       squad: ["Babar Azam", "Mohammad Rizwan", "Fakhar Zaman", "Saim Ayub", "Iftikhar Ahmed", "Shadab Khan", "Imad Wasim", "Shaheen Afridi", "Naseem Shah", "Haris Rauf", "Mohammad Amir"]
     }
   ];
@@ -128,6 +142,49 @@ const TeamsGallery = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.9rem' }}>
                   <div><strong>Captain:</strong> {activeTeam.captain}</div>
                   <div><strong>Head Coach:</strong> {activeTeam.coach}</div>
+                </div>
+              </div>
+
+              <div className="bowlers-tracker" style={{ padding: '1rem' }}>
+                <div className="tracker-title">Team Performance</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', fontSize: '0.9rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>Win Percentage:</span>
+                    <strong style={{ color: 'var(--color-primary)', fontSize: '1.1rem' }}>{activeTeam.winPercentage}</strong>
+                  </div>
+                  <div>
+                    <span style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Recent Form (Last 5):</span>
+                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                      {activeTeam.recentMatches.map((match, index) => {
+                        const isWin = match.includes('(W)');
+                        return (
+                          <div 
+                            key={index} 
+                            style={{ 
+                              width: '28px', 
+                              height: '28px', 
+                              borderRadius: '50%', 
+                              background: isWin ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                              border: isWin ? '1px solid #10B981' : '1px solid var(--color-danger)',
+                              color: isWin ? '#10B981' : 'var(--color-danger)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.75rem',
+                              fontWeight: '700',
+                              cursor: 'default',
+                            }}
+                            title={match}
+                          >
+                            {isWin ? 'W' : 'L'}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--color-text-dark)', marginTop: '0.3rem' }}>
+                      Hover for opponent details.
+                    </span>
+                  </div>
                 </div>
               </div>
 

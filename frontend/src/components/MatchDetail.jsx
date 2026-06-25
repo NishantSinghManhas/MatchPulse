@@ -130,11 +130,21 @@ const MatchDetail = ({ matchId, socket, onBack }) => {
       ? `${(hash % 5) + 2}/${(hash % 30) + 5}`
       : '1/12';
 
+    const countries = ['India', 'Australia', 'England', 'South Africa', 'New Zealand', 'Pakistan', 'West Indies', 'Sri Lanka', 'Bangladesh', 'Afghanistan'];
+    const country = countries[hash % countries.length];
+    const age = 20 + (hash % 18);
+    const hundreds = role.includes('Batsman') || role.includes('Allrounder') ? (hash % 15) : (hash % 2 === 0 ? 1 : 0);
+    const fifties = role.includes('Batsman') || role.includes('Allrounder') ? (hash % 35) + 2 : (hash % 5);
+
     return {
       name,
       role,
       batStyle,
       bowlStyle,
+      country,
+      age,
+      hundreds,
+      fifties,
       stats: { matches, runs, batAvg, strikeRate, wickets, bowlEcon, bestBowling }
     };
   };
@@ -144,6 +154,60 @@ const MatchDetail = ({ matchId, socket, onBack }) => {
     const cleanedName = name.replace(/\*$/, '').replace(/\(c\)|\(wk\)|\(c\/wk\)|\(sub\)/gi, '').trim();
     if (!cleanedName) return;
     setSelectedPlayer(generatePlayerProfile(cleanedName));
+  };
+
+  // Deterministic H2H / Fantasy Generator
+  const getPremiumInsights = () => {
+    let hash = 0;
+    const title = match.title || "";
+    for (let i = 0; i < title.length; i++) {
+      hash = title.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    hash = Math.abs(hash);
+
+    const totalMatches = (hash % 15) + 12;
+    const teamAWins = Math.floor((hash % 7) / 10 * totalMatches) + Math.floor(totalMatches / 3);
+    const teamBWins = totalMatches - teamAWins - (hash % 2 === 0 ? 1 : 0);
+    const noResult = totalMatches - teamAWins - teamBWins;
+
+    // Fantasy Picks
+    const squadPlayers = [
+      ...(match.batsmen || []).map(b => b.name),
+      ...(match.bowlers || []).map(b => b.name)
+    ].filter(Boolean);
+
+    const fallbackPlayersA = ["Virat Kohli", "Jasprit Bumrah", "Rohit Sharma", "Rishabh Pant", "Hardik Pandya"];
+    const fallbackPlayersB = ["Travis Head", "Pat Cummins", "Mitchell Starc", "Glenn Maxwell", "Adam Zampa"];
+    const pool = squadPlayers.length > 4 ? squadPlayers : [...fallbackPlayersA, ...fallbackPlayersB];
+
+    const topPicks = [
+      pool[hash % pool.length],
+      pool[(hash + 3) % pool.length],
+      pool[(hash + 7) % pool.length]
+    ].filter((v, i, a) => a.indexOf(v) === i).slice(0, 3);
+
+    if (topPicks.length < 3) {
+      topPicks.push(pool[1] || "Virat Kohli");
+    }
+    if (topPicks.length < 3) {
+      topPicks.push(pool[2] || "Travis Head");
+    }
+    
+    const captain = pool[(hash + 2) % pool.length] || "Jasprit Bumrah";
+    let viceCaptain = pool[(hash + 5) % pool.length] || "Pat Cummins";
+    if (viceCaptain === captain) {
+      viceCaptain = pool[(hash + 6) % pool.length] || "Pat Cummins";
+    }
+
+    return {
+      totalMatches,
+      teamAWins,
+      teamBWins,
+      noResult,
+      topPicks: topPicks.slice(0, 3),
+      captain,
+      viceCaptain
+    };
   };
 
   if (!match) {
@@ -458,74 +522,109 @@ const MatchDetail = ({ matchId, socket, onBack }) => {
               </h3>
 
               {isLive && (
-                <div className="tracker-row">
-                  {/* Striker/Non-Striker */}
-                  <div className="batsmen-tracker">
-                    <div className="tracker-title">Batting</div>
-                    <table className="tracker-table">
-                      <thead>
-                        <tr>
-                          <th>Batsman</th>
-                          <th className="text-right">R</th>
-                          <th className="text-right">B</th>
-                          <th className="text-right">4s</th>
-                          <th className="text-right">6s</th>
-                          <th className="text-right">SR</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {match.batsmen.filter(b => !b.isOut).map((b) => (
-                          <tr key={b.name} style={{ fontWeight: b.name === match.currentStriker ? '700' : '400', color: b.name === match.currentStriker ? '#FFF' : 'var(--color-text-muted)' }}>
-                            <td className="flex-row" style={{ padding: '0.4rem 0' }}>
-                              <span className="player-link" onClick={() => handlePlayerClick(b.name)}>
-                                {b.name}
-                              </span>
-                              {b.name === match.currentStriker && <span className="striker-dot" />}
-                            </td>
-                            <td className="text-right">{b.runs}</td>
-                            <td className="text-right">{b.balls}</td>
-                            <td className="text-right">{b.fours}</td>
-                            <td className="text-right">{b.sixes}</td>
-                            <td className="text-right">{b.balls > 0 ? ((b.runs / b.balls) * 100).toFixed(1) : '0.0'}</td>
+                <>
+                  <div className="tracker-row">
+                    {/* Striker/Non-Striker */}
+                    <div className="batsmen-tracker">
+                      <div className="tracker-title">Batting</div>
+                      <table className="tracker-table">
+                        <thead>
+                          <tr>
+                            <th>Batsman</th>
+                            <th className="text-right">R</th>
+                            <th className="text-right">B</th>
+                            <th className="text-right">4s</th>
+                            <th className="text-right">6s</th>
+                            <th className="text-right">SR</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
- 
-                  {/* Bowlers */}
-                  <div className="bowlers-tracker">
-                    <div className="tracker-title">Bowling</div>
-                    <table className="tracker-table">
-                      <thead>
-                        <tr>
-                          <th>Bowler</th>
-                          <th className="text-right">O</th>
-                          <th className="text-right">M</th>
-                          <th className="text-right">R</th>
-                          <th className="text-right">W</th>
-                          <th className="text-right">ER</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {match.bowlers.filter(b => b.isActive || b.name === match.currentBowler).map((b) => (
-                          <tr key={b.name} style={{ fontWeight: b.name === match.currentBowler ? '700' : '400', color: b.name === match.currentBowler ? '#FFF' : 'var(--color-text-muted)' }}>
-                            <td>
-                              <span className="player-link" onClick={() => handlePlayerClick(b.name)}>
-                                {b.name}
-                              </span>
-                            </td>
-                            <td className="text-right">{b.overs}</td>
-                            <td className="text-right">{b.maidens}</td>
-                            <td className="text-right">{b.runs}</td>
-                            <td className="text-right">{b.wickets}</td>
-                            <td className="text-right">{b.economy || '0.00'}</td>
+                        </thead>
+                        <tbody>
+                          {match.batsmen.filter(b => !b.isOut).map((b) => (
+                            <tr key={b.name} style={{ fontWeight: b.name === match.currentStriker ? '700' : '400', color: b.name === match.currentStriker ? '#FFF' : 'var(--color-text-muted)' }}>
+                              <td className="flex-row" style={{ padding: '0.4rem 0' }}>
+                                <span className="player-link" onClick={() => handlePlayerClick(b.name)}>
+                                  {b.name}
+                                </span>
+                                {b.name === match.currentStriker && <span className="striker-dot" />}
+                              </td>
+                              <td className="text-right">{b.runs}</td>
+                              <td className="text-right">{b.balls}</td>
+                              <td className="text-right">{b.fours}</td>
+                              <td className="text-right">{b.sixes}</td>
+                              <td className="text-right">{b.balls > 0 ? ((b.runs / b.balls) * 100).toFixed(1) : '0.0'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+   
+                    {/* Bowlers */}
+                    <div className="bowlers-tracker">
+                      <div className="tracker-title">Bowling</div>
+                      <table className="tracker-table">
+                        <thead>
+                          <tr>
+                            <th>Bowler</th>
+                            <th className="text-right">O</th>
+                            <th className="text-right">M</th>
+                            <th className="text-right">R</th>
+                            <th className="text-right">W</th>
+                            <th className="text-right">ER</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {match.bowlers.filter(b => b.isActive || b.name === match.currentBowler).map((b) => (
+                            <tr key={b.name} style={{ fontWeight: b.name === match.currentBowler ? '700' : '400', color: b.name === match.currentBowler ? '#FFF' : 'var(--color-text-muted)' }}>
+                              <td>
+                                <span className="player-link" onClick={() => handlePlayerClick(b.name)}>
+                                  {b.name}
+                                </span>
+                              </td>
+                              <td className="text-right">{b.overs}</td>
+                              <td className="text-right">{b.maidens}</td>
+                              <td className="text-right">{b.runs}</td>
+                              <td className="text-right">{b.wickets}</td>
+                              <td className="text-right">{b.economy || '0.00'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
+
+                  {/* Current Partnership Widget */}
+                  {match.partnership && (
+                    <div style={{ 
+                      background: 'rgba(0, 240, 255, 0.02)', 
+                      border: '1px solid var(--border-subtle)', 
+                      borderRadius: '10px', 
+                      padding: '0.8rem 1.2rem', 
+                      marginTop: '1rem',
+                      marginBottom: '1.2rem',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '0.8rem',
+                      fontSize: '0.85rem'
+                    }}>
+                      <div className="flex-row" style={{ gap: '0.5rem' }}>
+                        <Users size={14} style={{ color: 'var(--color-primary)' }} />
+                        <span style={{ color: 'var(--color-text-muted)' }}>Current Partnership:</span>
+                        <strong style={{ color: '#FFF' }}>
+                          {match.partnership.batsmanA} & {match.partnership.batsmanB}
+                        </strong>
+                      </div>
+                      <div style={{ display: 'flex', gap: '1rem' }}>
+                        <span>Runs: <strong style={{ color: 'var(--color-accent)', fontSize: '0.95rem' }}>{match.partnership.runs}</strong></span>
+                        <span style={{ color: 'var(--color-text-muted)' }}>Balls: <strong>{match.partnership.balls}</strong></span>
+                        <span style={{ color: 'var(--color-text-dark)' }}>
+                          RR: <strong>{match.partnership.balls > 0 ? ((match.partnership.runs / match.partnership.balls) * 6).toFixed(2) : '0.00'}</strong>
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
 
               {/* Current Over Widget */}
@@ -985,6 +1084,83 @@ const MatchDetail = ({ matchId, socket, onBack }) => {
             </div>
           )}
 
+          {/* Premium Insights Widget */}
+          <div className="pulse-card" style={{ 
+            border: '1px solid rgba(255, 215, 0, 0.25)', 
+            background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.02) 0%, rgba(255, 255, 255, 0.005) 100%)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            {/* Gold Premium Ribbon */}
+            <div style={{
+              position: 'absolute',
+              top: '8px',
+              right: '-28px',
+              background: 'linear-gradient(90deg, #D4AF37, #FFDF00)',
+              color: '#000',
+              fontSize: '0.55rem',
+              fontWeight: '800',
+              padding: '0.15rem 2.2rem',
+              transform: 'rotate(45deg)',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              zIndex: 1
+            }}>
+              PRO
+            </div>
+
+            <h4 style={{ fontSize: '0.95rem', borderBottom: '1px solid rgba(255,215,0,0.15)', paddingBottom: '0.4rem', color: '#FFD700', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.8rem' }}>
+              <Star size={14} fill="#FFD700" color="#FFD700" /> MatchPulse Premium Insights
+            </h4>
+
+            {(() => {
+              const insights = getPremiumInsights();
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', fontSize: '0.8rem' }}>
+                  {/* H2H Section */}
+                  <div>
+                    <strong style={{ display: 'block', color: 'var(--color-primary)', marginBottom: '0.3rem', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                      Head-to-Head (H2H) History
+                    </strong>
+                    <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-subtle)', borderRadius: '6px', padding: '0.5rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                        <span>Total Matches:</span>
+                        <strong style={{ color: '#FFF' }}>{insights.totalMatches}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                        <span>{match.teams.teamA.shortName || match.teams.teamA.name} Wins: <strong>{insights.teamAWins}</strong></span>
+                        <span>{match.teams.teamB.shortName || match.teams.teamB.name} Wins: <strong>{insights.teamBWins}</strong></span>
+                      </div>
+                      {insights.noResult > 0 && (
+                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-dark)', marginTop: '0.15rem' }}>
+                          No Result / Ties: {insights.noResult}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Fantasy Insights Section */}
+                  <div>
+                    <strong style={{ display: 'block', color: 'var(--color-accent)', marginBottom: '0.3rem', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                      Fantasy / Dream11 Insights
+                    </strong>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-subtle)', borderRadius: '6px', padding: '0.5rem' }}>
+                      <div>
+                        <span style={{ color: 'var(--color-text-muted)' }}>Top Picks: </span>
+                        <strong style={{ color: '#FFF', fontSize: '0.75rem' }}>{insights.topPicks.join(', ')}</strong>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: '0.3rem', marginTop: '0.1rem', gap: '0.15rem' }}>
+                        <div>Captain: <strong style={{ color: 'var(--color-primary)' }}>{insights.captain}</strong></div>
+                        <div>Vice-Captain: <strong style={{ color: 'var(--color-secondary)' }}>{insights.viceCaptain}</strong></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
           {/* Match Quick Info */}
           <div className="pulse-card">
             <h4 style={{ fontSize: '1rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.4rem', color: 'var(--color-primary)' }}>Match Quick Info</h4>
@@ -1033,6 +1209,14 @@ const MatchDetail = ({ matchId, socket, onBack }) => {
 
             <div className="player-bio-grid">
               <div className="bio-item">
+                <div className="bio-label">Country</div>
+                <div className="bio-value">{selectedPlayer.country}</div>
+              </div>
+              <div className="bio-item">
+                <div className="bio-label">Age</div>
+                <div className="bio-value">{selectedPlayer.age} years</div>
+              </div>
+              <div className="bio-item">
                 <div className="bio-label">Batting Style</div>
                 <div className="bio-value">{selectedPlayer.batStyle}</div>
               </div>
@@ -1051,28 +1235,29 @@ const MatchDetail = ({ matchId, socket, onBack }) => {
                     <th className="text-right">Mat</th>
                     <th className="text-right">Runs</th>
                     <th className="text-right">Avg</th>
-                    <th className="text-right">SR</th>
+                    <th className="text-right">100s</th>
+                    <th className="text-right">50s</th>
                     <th className="text-right">Wkts</th>
-                    <th className="text-right">Econ</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td>T20I / League</td>
+                    <td>T20I/League</td>
                     <td className="text-right">{selectedPlayer.stats.matches}</td>
                     <td className="text-right">{selectedPlayer.stats.runs}</td>
                     <td className="text-right">{selectedPlayer.stats.batAvg}</td>
-                    <td className="text-right">{selectedPlayer.stats.strikeRate}</td>
+                    <td className="text-right">{selectedPlayer.hundreds}</td>
+                    <td className="text-right">{selectedPlayer.fifties}</td>
                     <td className="text-right">{selectedPlayer.stats.wickets}</td>
-                    <td className="text-right">{selectedPlayer.stats.bowlEcon > 0 ? selectedPlayer.stats.bowlEcon : '-'}</td>
                   </tr>
                 </tbody>
               </table>
-              {selectedPlayer.stats.wickets > 0 && (
-                <div style={{ marginTop: '0.8rem', fontSize: '0.8rem', color: 'var(--color-text-muted)', textAlign: 'right' }}>
-                  <strong>Best Bowling:</strong> {selectedPlayer.stats.bestBowling}
-                </div>
-              )}
+              <div style={{ marginTop: '0.8rem', fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <span><strong>Strike Rate:</strong> {selectedPlayer.stats.strikeRate}</span>
+                {selectedPlayer.stats.wickets > 0 && (
+                  <span><strong>Best Bowl:</strong> {selectedPlayer.stats.bestBowling} (Econ: {selectedPlayer.stats.bowlEcon})</span>
+                )}
+              </div>
             </div>
           </div>
         </div>

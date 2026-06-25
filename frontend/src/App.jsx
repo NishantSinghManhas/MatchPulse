@@ -3,7 +3,8 @@ import { io } from 'socket.io-client';
 import { 
   Radio, PlusCircle, LayoutDashboard, Database, RefreshCw, 
   Trash2, Award, Calendar, Archive, Newspaper, Tv, Users, 
-  HelpCircle, User, CreditCard, CheckCircle, Flame, Sun, Moon
+  HelpCircle, User, CreditCard, CheckCircle, Flame, Sun, Moon,
+  Search, Trophy
 } from 'lucide-react';
 
 import MatchList from './components/MatchList';
@@ -13,6 +14,7 @@ import Rankings from './components/Rankings';
 import NewsHub from './components/NewsHub';
 import VideoGallery from './components/VideoGallery';
 import TeamsGallery from './components/TeamsGallery';
+import Tournaments from './components/Tournaments';
 
 // Connect to socket server
 const socket = io('http://localhost:5000');
@@ -26,9 +28,48 @@ const teamThemes = {
   ENG: '#ED64A6'  // Pink
 };
 
+const allSearchablePlayers = [
+  // India
+  { name: "Rohit Sharma", team: "India", code: "IND" },
+  { name: "Virat Kohli", team: "India", code: "IND" },
+  { name: "Suryakumar Yadav", team: "India", code: "IND" },
+  { name: "Rishabh Pant", team: "India", code: "IND" },
+  { name: "Hardik Pandya", team: "India", code: "IND" },
+  { name: "Ravindra Jadeja", team: "India", code: "IND" },
+  { name: "Axar Patel", team: "India", code: "IND" },
+  { name: "Kuldeep Yadav", team: "India", code: "IND" },
+  { name: "Jasprit Bumrah", team: "India", code: "IND" },
+  { name: "Arshdeep Singh", team: "India", code: "IND" },
+  { name: "Mohammed Siraj", team: "India", code: "IND" },
+  // Australia
+  { name: "Travis Head", team: "Australia", code: "AUS" },
+  { name: "David Warner", team: "Australia", code: "AUS" },
+  { name: "Mitchell Marsh", team: "Australia", code: "AUS" },
+  { name: "Glenn Maxwell", team: "Australia", code: "AUS" },
+  { name: "Marcus Stoinis", team: "Australia", code: "AUS" },
+  { name: "Tim David", team: "Australia", code: "AUS" },
+  { name: "Matthew Wade", team: "Australia", code: "AUS" },
+  { name: "Pat Cummins", team: "Australia", code: "AUS" },
+  { name: "Mitchell Starc", team: "Australia", code: "AUS" },
+  { name: "Josh Hazlewood", team: "Australia", code: "AUS" },
+  { name: "Adam Zampa", team: "Australia", code: "AUS" },
+  // England
+  { name: "Jos Buttler", team: "England", code: "ENG" },
+  { name: "Phil Salt", team: "England", code: "ENG" },
+  { name: "Will Jacks", team: "England", code: "ENG" },
+  { name: "Jonny Bairstow", team: "England", code: "ENG" },
+  { name: "Harry Brook", team: "England", code: "ENG" },
+  { name: "Liam Livingstone", team: "England", code: "ENG" },
+  { name: "Moeen Ali", team: "England", code: "ENG" },
+  { name: "Sam Curran", team: "England", code: "ENG" },
+  { name: "Jofra Archer", team: "England", code: "ENG" },
+  { name: "Adil Rashid", team: "England", code: "ENG" },
+  { name: "Mark Wood", team: "England", code: "ENG" }
+];
+
 function App() {
   const [matches, setMatches] = useState([]);
-  const [activeView, setActiveView] = useState('news'); // 'news', 'matches', 'detail', 'admin', 'rankings', 'teams', 'videos'
+  const [activeView, setActiveView] = useState('news'); // 'news', 'matches', 'detail', 'admin', 'rankings', 'teams', 'videos', 'tournaments'
   const [matchFilter, setMatchFilter] = useState('all'); // 'all', 'live', 'upcoming', 'completed'
   const [selectedMatchId, setSelectedMatchId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -46,6 +87,11 @@ function App() {
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [tempName, setTempName] = useState(user.name);
 
+  // Search & Navigation Navigation
+  const [selectedTeamCode, setSelectedTeamCode] = useState('IND');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchResults, setShowSearchResults] = useState(false);
+
   // Form payment fields
   const [cardNumber, setCardNumber] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
@@ -54,6 +100,7 @@ function App() {
   const [upgradeSuccess, setUpgradeSuccess] = useState(false);
 
   const profileRef = useRef(null);
+  const searchRef = useRef(null);
 
   // Fetch initial matches
   const fetchMatches = async () => {
@@ -100,6 +147,9 @@ function App() {
     const handleOutsideClick = (e) => {
       if (profileRef.current && !profileRef.current.contains(e.target)) {
         setShowProfileMenu(false);
+      }
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setShowSearchResults(false);
       }
     };
     document.addEventListener('mousedown', handleOutsideClick);
@@ -149,6 +199,68 @@ function App() {
   const handleSaveProfile = () => {
     setUser(prev => ({ ...prev, name: tempName }));
     setShowProfileMenu(false);
+  };
+
+  const getSearchResults = () => {
+    if (!searchQuery.trim()) return [];
+
+    const query = searchQuery.toLowerCase();
+    const results = [];
+
+    // 1. Match tournaments
+    if ('ipl'.includes(query) || 'indian premier league'.includes(query)) {
+      results.push({ type: 'tournament', name: 'IPL 2026', key: 'ipl', label: 'Tournament' });
+    }
+    if ('world cup'.includes(query) || 't20 wc'.includes(query) || 'wc'.includes(query)) {
+      results.push({ type: 'tournament', name: 'T20 World Cup', key: 'wc', label: 'Tournament' });
+    }
+
+    // 2. Match Teams
+    const teams = [
+      { name: 'India', code: 'IND' },
+      { name: 'Australia', code: 'AUS' },
+      { name: 'England', code: 'ENG' },
+      { name: 'South Africa', code: 'RSA' },
+      { name: 'New Zealand', code: 'NZ' },
+      { name: 'Pakistan', code: 'PAK' }
+    ];
+    teams.forEach(t => {
+      if (t.name.toLowerCase().includes(query) || t.code.toLowerCase().includes(query)) {
+        results.push({ type: 'team', name: t.name, code: t.code, label: 'Team Page' });
+      }
+    });
+
+    // 3. Match Players
+    allSearchablePlayers.forEach(p => {
+      if (p.name.toLowerCase().includes(query)) {
+        results.push({ type: 'player', name: p.name, code: p.code, label: `Player (${p.team})` });
+      }
+    });
+
+    // 4. Match Live/Recent/Upcoming Matches
+    matches.forEach(m => {
+      if (m.title.toLowerCase().includes(query) || m.series.toLowerCase().includes(query)) {
+        results.push({ type: 'match', name: m.title, id: m._id, label: 'Match Details' });
+      }
+    });
+
+    return results.slice(0, 8); // limit to 8 suggestions
+  };
+
+  const handleSearchResultClick = (res) => {
+    setSearchQuery('');
+    setShowSearchResults(false);
+    if (res.type === 'match') {
+      handleSelectMatch(res.id);
+    } else if (res.type === 'tournament') {
+      setActiveView('tournaments');
+    } else if (res.type === 'team') {
+      setSelectedTeamCode(res.code);
+      setActiveView('teams');
+    } else if (res.type === 'player') {
+      setSelectedTeamCode(res.code);
+      setActiveView('teams');
+    }
   };
 
   // Generate dynamic CSS overrides for custom themes
@@ -223,6 +335,13 @@ function App() {
           </button>
 
           <button 
+            className={`nav-link ${activeView === 'tournaments' ? 'active' : ''}`}
+            onClick={() => { setActiveView('tournaments'); setSelectedMatchId(null); }}
+          >
+            <Trophy size={14} /> Tournaments
+          </button>
+
+          <button 
             className={`nav-link ${activeView === 'rankings' ? 'active' : ''}`}
             onClick={() => { setActiveView('rankings'); setSelectedMatchId(null); }}
           >
@@ -239,6 +358,90 @@ function App() {
 
         {/* Header Right Widgets */}
         <div className="header-right">
+          {/* Global Search Bar */}
+          <div className="search-container" ref={searchRef} style={{ position: 'relative' }}>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="text"
+                placeholder="Search players, matches..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShowSearchResults(true);
+                }}
+                onFocus={() => setShowSearchResults(true)}
+                className="form-input"
+                style={{
+                  padding: '0.35rem 0.8rem 0.35rem 2rem',
+                  fontSize: '0.8rem',
+                  width: '180px',
+                  borderRadius: '20px',
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid var(--border-subtle)',
+                  color: '#FFF',
+                }}
+              />
+              <Search size={12} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-dark)' }} />
+            </div>
+
+            {/* Suggestions Dropdown Overlay */}
+            {showSearchResults && searchQuery.trim() && (
+              <div className="dropdown-menu" style={{
+                position: 'absolute',
+                top: '115%',
+                right: '0',
+                width: '280px',
+                maxHeight: '280px',
+                overflowY: 'auto',
+                zIndex: 1000,
+                padding: '0.4rem',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '8px',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                backdropFilter: 'blur(20px)',
+              }}>
+                <div style={{ fontSize: '0.65rem', color: 'var(--color-text-dark)', padding: '0.2rem 0.4rem', textTransform: 'uppercase', fontWeight: '700', borderBottom: '1px solid rgba(255,255,255,0.03)', marginBottom: '0.2rem' }}>
+                  Search Results
+                </div>
+                {getSearchResults().length === 0 ? (
+                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', padding: '0.4rem' }}>
+                    No results match "{searchQuery}"
+                  </div>
+                ) : (
+                  getSearchResults().map((res, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => handleSearchResultClick(res)}
+                      style={{
+                        padding: '0.45rem 0.4rem',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        fontSize: '0.75rem',
+                        transition: 'background 0.2s ease',
+                      }}
+                      className="search-result-item"
+                    >
+                      <span style={{ color: '#FFF', fontWeight: '500' }}>{res.name}</span>
+                      <span style={{
+                        fontSize: '0.6rem',
+                        color: res.type === 'match' ? 'var(--color-primary)' : (res.type === 'tournament' ? 'var(--color-accent)' : 'var(--color-text-muted)'),
+                        background: 'rgba(255,255,255,0.02)',
+                        padding: '0.05rem 0.3rem',
+                        borderRadius: '4px',
+                        border: '1px solid var(--border-subtle)'
+                      }}>
+                        {res.label}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
           {/* Theme Switcher Toggle */}
           <button 
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -427,6 +630,7 @@ function App() {
             )}
 
             {activeView === 'rankings' && <Rankings />}
+            {activeView === 'tournaments' && <Tournaments />}
             {activeView === 'news' && (
               <div className="view-section" style={{ gap: '0.8rem' }}>
                 <div className="quick-access-bar flex-row">
@@ -439,19 +643,19 @@ function App() {
                   </button>
                   <button 
                     className="quick-access-btn" 
-                    onClick={() => { setActiveView('matches'); setMatchFilter('all'); }}
+                    onClick={() => { setActiveView('tournaments'); }}
                   >
-                    📅 ICC World Cup
+                    📅 Tournaments Center
                   </button>
                   <button 
                     className="quick-access-btn" 
-                    onClick={() => { setActiveView('teams'); }}
+                    onClick={() => { setSelectedTeamCode('IND'); setActiveView('teams'); }}
                   >
                     👥 India (IND)
                   </button>
                   <button 
                     className="quick-access-btn" 
-                    onClick={() => { setActiveView('teams'); }}
+                    onClick={() => { setSelectedTeamCode('AUS'); setActiveView('teams'); }}
                   >
                     👥 Australia (AUS)
                   </button>
@@ -466,7 +670,12 @@ function App() {
               </div>
             )}
             {activeView === 'videos' && <VideoGallery />}
-            {activeView === 'teams' && <TeamsGallery />}
+            {activeView === 'teams' && (
+              <TeamsGallery 
+                selectedTeamCode={selectedTeamCode} 
+                setSelectedTeamCode={setSelectedTeamCode} 
+              />
+            )}
           </>
         )}
       </main>
